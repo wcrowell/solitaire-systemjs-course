@@ -16,7 +16,7 @@ node {
     
     // test with PhantomJS for "fast" "generic" results
     // on windows use: bat 'npm run test-single-run -- --browsers PhantomJS'
-    sh 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
     
     // archive karma test results (karma is configured to export junit xml files)
     step([$class: 'JUnitResultArchiver', 
