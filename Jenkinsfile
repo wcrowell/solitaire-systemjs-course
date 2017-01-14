@@ -1,8 +1,6 @@
 stage 'CI'
 node {
-
-    checkout scm
-
+	checkout scm
     //git branch: 'jenkins2-course', 
     //    url: 'https://github.com/wcrowell/solitaire-systemjs-course'
 
@@ -27,17 +25,10 @@ node {
           
 }
 
-// demoing a second agent
 node('mac') {
-    // on windows use: bat 'dir'
     sh 'ls'
-
-    // on windows use: bat 'del /S /Q *'
     sh 'rm -rf *'
-
     unstash 'everything'
-
-    // on windows use: bat 'dir'
     sh 'ls'
 }
 
@@ -52,18 +43,22 @@ parallel chrome: {
 }
 
 def runTests(browser) {
-    node {
-        // on windows use: bat 'del /S /Q *'
-        sh 'rm -rf *'
+	node {
+		sh 'rm -rf *'
+		unstash 'everything'
+		sh "npm run test-single-run -- --browsers ${browser}"
+		step([$class: 'JUnitResultArchiver', 
+			testResults: 'test-results/**/test-results.xml'])
+	}
+}
 
-        unstash 'everything'
-
-        // on windows use: bat "npm run test-single-run -- --browsers ${browser}"
-        sh "npm run test-single-run -- --browsers ${browser}"
-
-        step([$class: 'JUnitResultArchiver', 
-              testResults: 'test-results/**/test-results.xml'])
-    }
+def notify(status){
+    emailext (
+      to: "william.crowell@roguewave.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
 }
 
 node {
@@ -72,10 +67,6 @@ node {
 
 input 'Deploy to staging?'
 
-// limit concurrency so we don't perform simultaneous deploys
-// and if multiple pipelines are executing, 
-// newest is only that will be allowed through, rest will be canceled
-stage name: 'Deploy to staging', concurrency: 1
 node {
     // write build number to index page so we can see this update
     // on windows use: bat "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
@@ -88,21 +79,3 @@ node {
     notify 'Solitaire Deployed!'
 }
 
-
-
-
-
-
-
-
-
-
-
-def notify(status){
-    emailext (
-      to: "william.crowell@roguewave.com",
-      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
-    )
-}
